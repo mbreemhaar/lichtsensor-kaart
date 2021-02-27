@@ -15,10 +15,19 @@ def load_observations(id):
     :return: pandas dataframe with all observations
     """
     files = iglob(os.path.join('data', '**', f'*{id}.csv'), recursive=True)
+
+    today = datetime.now()
+    year = today.year
+    month = today.month
+    day = today.day
+
+    files = [f for f in files if re.search(fr'{year}-0?{month}-0?{day}', f)]
+
     names = ['time', 'sensor_id', 'light_value', 'is_open', 'temp']
 
     df = pd.DataFrame(columns=names)
     for f in files:
+        print(f'Loading file {f}')
         file_data = pd.read_csv(f, delimiter=';', header=0, names=names, parse_dates=['time'])
 
         # Replace Pandas inferred date (today) by date from filename
@@ -27,8 +36,9 @@ def load_observations(id):
         month = int(date_match.group('month'))
         day = int(date_match.group('day'))
         file_data['time'] = [timestamp.replace(year=year, month=month, day=day) for timestamp in file_data['time']]
-
         df = df.append(file_data, ignore_index=True)
+
+    df.set_index('time', drop=True, inplace=True)
 
     return df
 
