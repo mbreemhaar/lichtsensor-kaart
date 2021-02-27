@@ -5,6 +5,12 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from datetime import datetime
+import folium
+
+PLOTS_DIR = 'plots'
+DATA_DIR = 'data'
+LOCATION_DATA_FILENAME = 'birdhouse.txt'
+MAP_FILENAME = 'index.html'
 
 
 def load_observations(id):
@@ -14,7 +20,7 @@ def load_observations(id):
     :param id: int with sensor id
     :return: pandas dataframe with all observations
     """
-    files = iglob(os.path.join('data', '**', f'*{id}.csv'), recursive=True)
+    files = iglob(os.path.join(DATA_DIR, '**', f'*{id}.csv'), recursive=True)
 
     today = datetime.now()
     year = today.year
@@ -43,8 +49,10 @@ def load_observations(id):
     return df
 
 
-def plot_observations(obs):
-    time = obs.time
+def plot_observations(sensor_id):
+    obs = load_observations(sensor_id)
+    
+    time = obs.index
     time_labels = np.array([datetime.strftime(t, '%H:%M') for t in time])
     idx = np.round(np.linspace(0, len(time) - 1, 5)).astype(int)
     time_labels = time_labels[idx]
@@ -53,13 +61,25 @@ def plot_observations(obs):
 
     plt.plot_date(range(len(time)), light_value, '-')
     plt.xticks(idx, time_labels)
-    plt.show()
+    plt.savefig(os.path.join(PLOTS_DIR, str(sensor_id) + '.jpg'))
 
 
 if __name__ == "__main__":
-    location_data_path = os.path.join('data', 'birdhouse.txt')
-    location_data = pd.read_csv(location_data_path)
+    os.makedirs(PLOTS_DIR, exist_ok=True)
 
-    for sensor_id in location_data.sensor:
-        observations = load_observations(sensor_id)
-        print(observations)
+    location_data_path = os.path.join(DATA_DIR, LOCATION_DATA_FILENAME)
+    location_data = pd.read_csv(location_data_path, index_col='sensor')
+
+    m = folium.Map()
+
+    for sensor_id in location_data.index:
+        plot_observations(sensor_id)
+
+        plot_file = PLOTS_DIR + '/' + str(sensor_id) + '.jpg'
+
+        latitude = location_data.loc[sensor_id].breedte
+        longitude = location_data.loc[sensor_id].lengte
+        marker = folium.Marker((latitude, longitude), popup=f'<img src="{plot_file}">')
+        marker.add_to(m)
+
+    m.save(MAP_FILENAME)
