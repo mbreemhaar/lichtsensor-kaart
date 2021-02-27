@@ -1,16 +1,19 @@
 import os
 import re
 from glob import iglob
-import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from datetime import datetime
 import folium
+import matplotlib.dates as mdates
 
 PLOTS_DIR = 'plots'
 DATA_DIR = 'data'
 LOCATION_DATA_FILENAME = 'birdhouse.txt'
 MAP_FILENAME = 'index.html'
+
+LIGHT_VALUE_COLOR = 'blue'
+IS_OPEN_COLOR = 'red'
 
 
 def load_observations(id):
@@ -50,18 +53,32 @@ def load_observations(id):
 
 
 def plot_observations(sensor_id):
+    fig, ax = plt.subplots()
+
     obs = load_observations(sensor_id)
-    
-    time = obs.index
-    time_labels = np.array([datetime.strftime(t, '%H:%M') for t in time])
-    idx = np.round(np.linspace(0, len(time) - 1, 5)).astype(int)
-    time_labels = time_labels[idx]
 
-    light_value = obs['light_value']
+    hours = mdates.HourLocator()
+    hours_fmt = mdates.DateFormatter('%H:%M')
 
-    plt.plot_date(range(len(time)), light_value, '-')
-    plt.xticks(idx, time_labels)
+    ax.plot(obs.index, obs.light_value, c=LIGHT_VALUE_COLOR)
+    ax.xaxis.set_major_locator(hours)
+    ax.xaxis.set_major_formatter(hours_fmt)
+    ax.set_ylabel('Lichtwaarde (Lux)')
+    ax.yaxis.label.set_color(LIGHT_VALUE_COLOR)
+    ax.set_title(f'Lichtwaardes sensor {sensor_id}')
+
+    ax2 = ax.twinx()
+    ax2.step(obs.index, obs.is_open, c=IS_OPEN_COLOR)
+    ax2.set_ylabel('Open/Dicht')
+    ax2.set_yticks(ticks=[0, 1])
+    ax2.set_yticklabels(['Dicht', 'Open'])
+    ax2.yaxis.label.set_color(IS_OPEN_COLOR)
+    ax2.xaxis.set_major_locator(hours)
+    ax2.xaxis.set_major_formatter(hours_fmt)
+
+    fig.autofmt_xdate()
     plt.savefig(os.path.join(PLOTS_DIR, str(sensor_id) + '.jpg'))
+    plt.show()
 
 
 if __name__ == "__main__":
