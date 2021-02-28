@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import folium
 import matplotlib.dates as mdates
 
+TIMEFRAME = 6
+
 PLOTS_DIR = 'plots'
 DATA_DIR = 'data'
 LOCATION_DATA_FILENAME = 'birdhouse.txt'
@@ -54,6 +56,7 @@ def plot_observations(sensor_id):
     fig, ax = plt.subplots()
 
     obs = load_observations(sensor_id)
+    obs = obs[datetime.now() - timedelta(hours=TIMEFRAME):datetime.now()]
 
     hours = mdates.HourLocator()
     hours_fmt = mdates.DateFormatter('%H:%M')
@@ -66,7 +69,7 @@ def plot_observations(sensor_id):
     ax.set_title(f'Lichtwaardes sensor {sensor_id}')
 
     ax2 = ax.twinx()
-    ax2.step(obs.index, obs.is_open, c=IS_OPEN_COLOR)
+    ax2.scatter(obs.index, obs.is_open, s=3,  c=IS_OPEN_COLOR)
     ax2.set_ylabel('Open/Dicht')
     ax2.set_yticks(ticks=[0, 1])
     ax2.set_yticklabels(['Dicht', 'Open'])
@@ -76,7 +79,6 @@ def plot_observations(sensor_id):
 
     fig.autofmt_xdate()
     plt.savefig(os.path.join(PLOTS_DIR, str(sensor_id) + '.jpg'))
-    plt.show()
 
 
 if __name__ == "__main__":
