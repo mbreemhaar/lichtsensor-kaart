@@ -3,7 +3,7 @@ import re
 from glob import iglob
 import pandas as pd
 from matplotlib import pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 import folium
 import matplotlib.dates as mdates
 
@@ -26,11 +26,9 @@ def load_observations(id):
     files = iglob(os.path.join(DATA_DIR, '**', f'*{id}.csv'), recursive=True)
 
     today = datetime.now()
-    year = today.year
-    month = today.month
-    day = today.day
+    yesterday = today - timedelta(days=1)
 
-    files = [f for f in files if re.search(fr'{year}-0?{month}-0?{day}', f)]
+    files = [f for f in files if re.search(fr'{today.year}-0?{today.month}-0?{today.day}', f) or re.search(fr'{yesterday.year}-0?{yesterday.month}-0?{yesterday.day}', f)]
 
     names = ['time', 'sensor_id', 'light_value', 'is_open', 'temp']
 
