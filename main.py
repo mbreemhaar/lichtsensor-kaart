@@ -48,6 +48,7 @@ def load_observations(id):
         df = df.append(file_data, ignore_index=True)
 
     df.set_index('time', drop=True, inplace=True)
+    df.sort_index(inplace=True)
 
     return df
 
@@ -74,7 +75,6 @@ def plot_observations(sensor_id):
     ax2.set_yticks(ticks=[0, 1])
     ax2.set_yticklabels(['Dicht', 'Open'])
     ax2.yaxis.label.set_color(IS_OPEN_COLOR)
-    ax2.xaxis.set_major_locator(hours)
     ax2.xaxis.set_major_formatter(hours_fmt)
 
     fig.autofmt_xdate()
