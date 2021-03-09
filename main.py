@@ -89,6 +89,11 @@ if __name__ == "__main__":
 
     m = folium.Map()
 
+    # Set zoom to view all markers
+    sw = location_data[['breedte', 'lengte']].min().values.tolist()
+    ne = location_data[['breedte', 'lengte']].max().values.tolist()
+    m.fit_bounds([sw, ne])
+
     for sensor_id in location_data.index:
         plot_observations(sensor_id)
 
