@@ -15,8 +15,7 @@ DATA_OUTPUT_DIR = 'data_out'
 LOCATION_DATA_FILENAME = 'birdhouse.txt'
 MAP_FILENAME = 'index.html'
 
-LIGHT_VALUE_COLOR = 'blue'
-IS_OPEN_COLOR = 'red'
+ALLOW_MISSING_DATA = True
 
 
 def load_observations(id):
@@ -53,36 +52,58 @@ def load_observations(id):
 
     return df
 
+def make_patch_spines_invisible(ax):
+    ax.set_frame_on(True)
+    ax.patch.set_visible(False)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+
 
 def plot_observations(sensor_id):
     obs = load_observations(sensor_id)
     obs.to_csv(os.path.join(DATA_OUTPUT_DIR, f'{sensor_id}' + '.csv'))
 
     for t_idx, t in enumerate(TIMEFRAME):
-
-        fig, ax = plt.subplots()
         obs = obs[datetime.now() - timedelta(hours=t):datetime.now()]
 
-        if obs.empty:
+        if obs.empty and not ALLOW_MISSING_DATA:
             return False
 
+        fig, host = plt.subplots()
+        fig.subplots_adjust(right=0.75)
+
+        par1 = host.twinx()
+        par2 = host.twinx()
+
+        par2.spines["right"].set_position(("axes", 1.2))
+        make_patch_spines_invisible(par2)
+        par2.spines["right"].set_visible(True)
+
+        p1, = host.plot(obs.index, obs.light_value, 'b-', label="Lichtwaarde (Lux)")
+        p2, = par1.plot(obs.index, obs.is_open, 'r-', label="Open/Dicht")
+        p3, = par2.plot(obs.index, obs.temp, 'g-', label="Temperatuur")
+
         hours_fmt = mdates.DateFormatter('%H:%M')
+        host.xaxis.set_major_formatter(hours_fmt)
+        par1.xaxis.set_major_formatter(hours_fmt)
+        par2.xaxis.set_major_formatter(hours_fmt)
 
-        ax.plot(obs.index, obs.light_value, c=LIGHT_VALUE_COLOR)
-        ax.xaxis.set_major_formatter(hours_fmt)
-        ax.set_ylabel('Lichtwaarde (Lux)')
-        ax.yaxis.label.set_color(LIGHT_VALUE_COLOR)
-        ax.set_title(f'Lichtwaardes sensor {sensor_id} afgelopen {t} uur')
+        par1.set_yticks(ticks=[0, 1])
+        par1.set_yticklabels(['Dicht', 'Open'])
 
-        ax2 = ax.twinx()
-        ax2.scatter(obs.index, obs.is_open, s=3,  c=IS_OPEN_COLOR)
-        ax2.set_ylabel('Open/Dicht')
-        ax2.set_yticks(ticks=[0, 1])
-        ax2.set_yticklabels(['Dicht', 'Open'])
-        ax2.yaxis.label.set_color(IS_OPEN_COLOR)
-        ax2.xaxis.set_major_formatter(hours_fmt)
+        host.set_xlabel("Tijd")
+        host.set_ylabel("Lichtwaarde (Lux)")
+        par1.set_ylabel("Open/Dicht")
+        par2.set_ylabel("Temperatuur")
+
+        host.yaxis.label.set_color(p1.get_color())
+        par1.yaxis.label.set_color(p2.get_color())
+        par2.yaxis.label.set_color(p3.get_color())
 
         fig.autofmt_xdate()
+
+        host.set_title(f'Sensor {sensor_id}, afgelopen {t} uur')
+
         plt.savefig(os.path.join(PLOTS_DIR, str(sensor_id) + f'_{t}' + '.jpg'))
 
     return True
