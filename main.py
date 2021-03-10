@@ -7,10 +7,11 @@ from datetime import datetime, timedelta
 import folium
 import matplotlib.dates as mdates
 
-TIMEFRAME = 6
+TIMEFRAME = [12, 1]
 
 PLOTS_DIR = 'plots'
 DATA_DIR = 'data'
+DATA_OUTPUT_DIR = 'data_out'
 LOCATION_DATA_FILENAME = 'birdhouse.txt'
 MAP_FILENAME = 'index.html'
 
@@ -54,52 +55,83 @@ def load_observations(id):
 
 
 def plot_observations(sensor_id):
-    fig, ax = plt.subplots()
-
     obs = load_observations(sensor_id)
-    obs = obs[datetime.now() - timedelta(hours=TIMEFRAME):datetime.now()]
+    obs.to_csv(os.path.join(DATA_OUTPUT_DIR, f'{sensor_id}' + '.csv'))
 
-    hours_fmt = mdates.DateFormatter('%H:%M')
+    for t_idx, t in enumerate(TIMEFRAME):
 
-    ax.plot(obs.index, obs.light_value, c=LIGHT_VALUE_COLOR)
-    ax.xaxis.set_major_formatter(hours_fmt)
-    ax.set_ylabel('Lichtwaarde (Lux)')
-    ax.yaxis.label.set_color(LIGHT_VALUE_COLOR)
-    ax.set_title(f'Lichtwaardes sensor {sensor_id}')
+        fig, ax = plt.subplots()
+        obs = obs[datetime.now() - timedelta(hours=t):datetime.now()]
 
-    ax2 = ax.twinx()
-    ax2.scatter(obs.index, obs.is_open, s=3,  c=IS_OPEN_COLOR)
-    ax2.set_ylabel('Open/Dicht')
-    ax2.set_yticks(ticks=[0, 1])
-    ax2.set_yticklabels(['Dicht', 'Open'])
-    ax2.yaxis.label.set_color(IS_OPEN_COLOR)
-    ax2.xaxis.set_major_formatter(hours_fmt)
+        if obs.empty:
+            return False
 
-    fig.autofmt_xdate()
-    plt.savefig(os.path.join(PLOTS_DIR, str(sensor_id) + '.jpg'))
+        hours_fmt = mdates.DateFormatter('%H:%M')
+
+        ax.plot(obs.index, obs.light_value, c=LIGHT_VALUE_COLOR)
+        ax.xaxis.set_major_formatter(hours_fmt)
+        ax.set_ylabel('Lichtwaarde (Lux)')
+        ax.yaxis.label.set_color(LIGHT_VALUE_COLOR)
+        ax.set_title(f'Lichtwaardes sensor {sensor_id} afgelopen {t} uur')
+
+        ax2 = ax.twinx()
+        ax2.scatter(obs.index, obs.is_open, s=3,  c=IS_OPEN_COLOR)
+        ax2.set_ylabel('Open/Dicht')
+        ax2.set_yticks(ticks=[0, 1])
+        ax2.set_yticklabels(['Dicht', 'Open'])
+        ax2.yaxis.label.set_color(IS_OPEN_COLOR)
+        ax2.xaxis.set_major_formatter(hours_fmt)
+
+        fig.autofmt_xdate()
+        plt.savefig(os.path.join(PLOTS_DIR, str(sensor_id) + f'_{t}' + '.jpg'))
+
+    return True
 
 
 if __name__ == "__main__":
+    TIMEFRAME.sort(reverse=True)
+
     os.makedirs(PLOTS_DIR, exist_ok=True)
+    os.makedirs(DATA_OUTPUT_DIR, exist_ok=True)
 
     location_data_path = os.path.join(DATA_DIR, LOCATION_DATA_FILENAME)
     location_data = pd.read_csv(location_data_path, index_col='sensor')
 
     m = folium.Map()
 
-    # Set zoom to view all markers
-    sw = location_data[['breedte', 'lengte']].min().values.tolist()
-    ne = location_data[['breedte', 'lengte']].max().values.tolist()
-    m.fit_bounds([sw, ne])
+    sw = [None, None]
+    ne = [None, None]
 
     for sensor_id in location_data.index:
-        plot_observations(sensor_id)
 
-        plot_file = PLOTS_DIR + '/' + str(sensor_id) + '.jpg'
+        if not plot_observations(sensor_id):
+            continue
 
+        popup_html = ''
+        for t in TIMEFRAME:
+            plot_file = PLOTS_DIR + '/' + str(sensor_id) + f'_{t}' + '.jpg'
+            popup_html += f'<img src="{plot_file}"><br>'
+
+        popup_html += f'<a href="{DATA_OUTPUT_DIR}/{sensor_id}.csv">Download</a>'
         latitude = location_data.loc[sensor_id].breedte
         longitude = location_data.loc[sensor_id].lengte
-        marker = folium.Marker((latitude, longitude), popup=f'<img src="{plot_file}">')
+
+        if sw[0] is None:
+            sw = [latitude, longitude]
+            ne = [latitude, longitude]
+        else:
+            if latitude < sw[0]:
+                sw[0] = latitude
+            if latitude > ne[0]:
+                ne[0] = latitude
+            if longitude < sw[1]:
+                sw[1] = longitude
+            if longitude > ne[1]:
+                ne[1] = longitude
+
+        marker = folium.Marker((latitude, longitude), popup=popup_html)
         marker.add_to(m)
+
+    m.fit_bounds([sw, ne])
 
     m.save(MAP_FILENAME)
