@@ -59,11 +59,9 @@ def plot_observations(sensor_id):
     obs = load_observations(sensor_id)
     obs = obs[datetime.now() - timedelta(hours=TIMEFRAME):datetime.now()]
 
-    hours = mdates.HourLocator()
     hours_fmt = mdates.DateFormatter('%H:%M')
 
     ax.plot(obs.index, obs.light_value, c=LIGHT_VALUE_COLOR)
-    ax.xaxis.set_major_locator(hours)
     ax.xaxis.set_major_formatter(hours_fmt)
     ax.set_ylabel('Lichtwaarde (Lux)')
     ax.yaxis.label.set_color(LIGHT_VALUE_COLOR)
