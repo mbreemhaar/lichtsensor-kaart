@@ -138,6 +138,7 @@ if __name__ == "__main__":
         popup_html += f'<a href="{DATA_OUTPUT_DIR}/{sensor_id}.csv">Download data</a>'
         latitude = location_data.loc[sensor_id].breedte
         longitude = location_data.loc[sensor_id].lengte
+        color = location_data.loc[sensor_id].kleur
 
         if sw[0] is None:
             sw = [latitude, longitude]
@@ -152,7 +153,7 @@ if __name__ == "__main__":
             if longitude > ne[1]:
                 ne[1] = longitude
 
-        marker = folium.Marker((latitude, longitude), popup=popup_html)
+        marker = folium.Marker((latitude, longitude), popup=popup_html, icon=folium.Icon(color=color))
         marker.add_to(m)
 
     m.fit_bounds([sw, ne])
