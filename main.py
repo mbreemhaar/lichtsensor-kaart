@@ -128,12 +128,14 @@ if __name__ == "__main__":
         if not plot_observations(sensor_id):
             continue
 
-        popup_html = ''
-        for t in TIMEFRAME:
-            plot_file = PLOTS_DIR + '/' + str(sensor_id) + f'_{t}' + '.jpg'
-            popup_html += f'<img src="{plot_file}"><br>'
+        plot_file = PLOTS_DIR + '/' + str(sensor_id) + f'_{TIMEFRAME[0]}' + '.jpg'
+        popup_html = f'<img src="{plot_file}"><br>'
 
-        popup_html += f'<a href="{DATA_OUTPUT_DIR}/{sensor_id}.csv">Download</a>'
+        for t in TIMEFRAME[1:]:
+            plot_file = PLOTS_DIR + '/' + str(sensor_id) + f'_{t}' + '.jpg'
+            popup_html += f'<a href="{plot_file}">Laatste {t} uur</a><br>'
+
+        popup_html += f'<a href="{DATA_OUTPUT_DIR}/{sensor_id}.csv">Download data</a>'
         latitude = location_data.loc[sensor_id].breedte
         longitude = location_data.loc[sensor_id].lengte
 
