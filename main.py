@@ -60,8 +60,10 @@ def make_patch_spines_invisible(ax):
 
 
 def plot_observations(sensor_id):
+    datestring = datetime.now().strftime('%Y%m%d')
+
     obs = load_observations(sensor_id)
-    obs.to_csv(os.path.join(DATA_OUTPUT_DIR, f'{sensor_id}' + '.csv'))
+    obs.to_csv(os.path.join(DATA_OUTPUT_DIR, f'{datestring}_{sensor_id}' + '.csv'))
 
     for t_idx, t in enumerate(TIMEFRAME):
         obs = obs[datetime.now() - timedelta(hours=t):datetime.now()]
@@ -104,7 +106,7 @@ def plot_observations(sensor_id):
 
         host.set_title(f'Sensor {sensor_id}, afgelopen {t} uur')
 
-        plt.savefig(os.path.join(PLOTS_DIR, str(sensor_id) + f'_{t}' + '.jpg'))
+        plt.savefig(os.path.join(PLOTS_DIR, f'{datestring}_{sensor_id}_{t}.jpg'))
 
     return True
 
@@ -123,19 +125,21 @@ if __name__ == "__main__":
     sw = [None, None]
     ne = [None, None]
 
+    datestring = datetime.now().strftime('%Y%m%d')
+
     for sensor_id in location_data.index:
 
         if not plot_observations(sensor_id):
             continue
 
-        plot_file = PLOTS_DIR + '/' + str(sensor_id) + f'_{TIMEFRAME[0]}' + '.jpg'
+        plot_file = PLOTS_DIR + '/' + f'{datestring}_{sensor_id}_{TIMEFRAME[0]}.jpg'
         popup_html = f'<img src="{plot_file}"><br>'
 
         for t in TIMEFRAME[1:]:
-            plot_file = PLOTS_DIR + '/' + str(sensor_id) + f'_{t}' + '.jpg'
+            plot_file = PLOTS_DIR + '/' f'{datestring}_{sensor_id}_{t}.jpg'
             popup_html += f'<a href="{plot_file}">Laatste {t} uur</a><br>'
 
-        popup_html += f'<a href="{DATA_OUTPUT_DIR}/{sensor_id}.csv">Download data</a>'
+        popup_html += f'<a href="{DATA_OUTPUT_DIR}/{datestring}_{sensor_id}.csv">Download data</a>'
         latitude = location_data.loc[sensor_id].breedte
         longitude = location_data.loc[sensor_id].lengte
         color = location_data.loc[sensor_id].kleur
