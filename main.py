@@ -12,6 +12,7 @@ TIMEFRAME = [12, 1]
 PLOTS_DIR = 'plots'
 DATA_DIR = 'data'
 DATA_OUTPUT_DIR = 'data_out'
+IMG_DIR = 'photo'
 LOCATION_DATA_FILENAME = 'birdhouse.txt'
 MAP_FILENAME = 'index.html'
 
@@ -107,6 +108,7 @@ def plot_observations(sensor_id):
         host.set_title(f'Sensor {sensor_id}, afgelopen {t} uur')
 
         plt.savefig(os.path.join(PLOTS_DIR, f'{datestring}_{sensor_id}_{t}.jpg'))
+        plt.close()
 
     return True
 
@@ -133,13 +135,19 @@ if __name__ == "__main__":
             continue
 
         plot_file = PLOTS_DIR + '/' + f'{datestring}_{sensor_id}_{TIMEFRAME[0]}.jpg'
-        popup_html = f'<img src="{plot_file}"><br>'
+        popup_html = f'<img src="{plot_file}">'
 
         for t in TIMEFRAME[1:]:
             plot_file = PLOTS_DIR + '/' f'{datestring}_{sensor_id}_{t}.jpg'
-            popup_html += f'<a href="{plot_file}">Laatste {t} uur</a><br>'
+            popup_html += f'<br><a href="{plot_file}">Laatste {t} uur</a>'
 
-        popup_html += f'<a href="{DATA_OUTPUT_DIR}/{datestring}_{sensor_id}.csv">Download data</a>'
+        popup_html += f'<br><a href="{DATA_OUTPUT_DIR}/{datestring}_{sensor_id}.csv">Download data</a>'
+
+        img_filename = location_data.loc[sensor_id].photo
+
+        if type(img_filename) == str:
+            popup_html += f'<br><a href="{IMG_DIR}/{img_filename}">Locatie</a>'
+
         latitude = location_data.loc[sensor_id].breedte
         longitude = location_data.loc[sensor_id].lengte
         color = location_data.loc[sensor_id].kleur
